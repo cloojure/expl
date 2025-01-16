@@ -63,7 +63,7 @@
       (is= I1 [1 2 3 4 5])
       (is= I2 [2 3 4 5 6]))))
 
-(verify-focus
+(verify
   (let-spy
     [vecsum     (fn [v] (apply + v))
      vecsum-blk (fn-blockify vecsum)
@@ -76,8 +76,8 @@
                   (vecsum b))
 
      b1s2       (vecsum-blk b1)
-     b1f1        (vecsum b1s1)
-     b1f2        (vecsum b1s2)
+     b1f1       (vecsum b1s1)
+     b1f2       (vecsum b1s2)
      ]
     (is= v1s 55)
 
@@ -88,13 +88,10 @@
     (is= b1s1 [6 15 24 10])
     (is= b1s2 [6 15 24 10])
     (is= b1f1 55)
-    (is= b1f2 55)
-
-    )
-  )
+    (is= b1f2 55)))
 
 
-(verify-focus
+(verify
   ; ***** Need to disable Plumatic Schema validation of arguments or destroys laziness!!! *****
   (s/without-fn-validation
 
@@ -186,9 +183,9 @@
   [N :- s/Int
    as :- [s/Num]
    bs :- [s/Num]]
-  (let [ablks (partition-all N as)
-        bblks (partition-all N bs)
-        rblks (mapv vadd2 ablks bblks)
+  (let [ablks  (partition-all N as)
+        bblks  (partition-all N bs)
+        rblks  (mapv vadd2 ablks bblks)
         result (apply glue rblks)]
     result))
 
@@ -197,21 +194,21 @@
    f :- tsk/Fn]
   (let [fout (fn [& args]
                (let [args-blks (mapv #(partition-all N %) args)
-                     rblks (apply mapv f args-blks)
-                     result (apply glue rblks)]
+                     rblks     (apply mapv f args-blks)
+                     result    (apply glue rblks)]
                  )
                )])
   )
 
 (verify-focus
   (let-spy
-    [as (thru 0 9)
-     bs (thru 1 10)
-     r1 (vadd2 as bs)
-     r2 (vadd2-blk 3 as bs)
-     fblk  (blkify 3 vadd2)
+    [as   (thru 0 9)
+     bs   (thru 1 10)
+     r1   (vadd2 as bs)
+     r2   (vadd2-blk 3 as bs)
+     fblk (blkify 3 vadd2)
      ; rblk (fblk as bs)
-        ]
+     ]
     )
   )
 
