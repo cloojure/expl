@@ -3,8 +3,9 @@
         tupelo.core
         tupelo.test)
   (:require
-    [tupelo.profile :as prof]
     [schema.core :as s]
+    [tupelo.profile :as prof]
+    [tupelo.schema :as tsk]
     ))
 
 (def verbose? true)
@@ -173,44 +174,4 @@
         (do
           (lazy-fn)))))
   )
-
-(s/defn vadd2 :- [s/Num]
-  [as :- [s/Num]
-   bs :- [s/Num]]
-  (mapv + as bs))
-
-(s/defn vadd2-blk :- [s/Num]
-  [N :- s/Int
-   as :- [s/Num]
-   bs :- [s/Num]]
-  (let [ablks  (partition-all N as)
-        bblks  (partition-all N bs)
-        rblks  (mapv vadd2 ablks bblks)
-        result (apply glue rblks)]
-    result))
-
-(s/defn blkify :- tsk/Fn
-  [N :- s/Int
-   f :- tsk/Fn]
-  (let [fout (fn [& args]
-               (let [args-blks (mapv #(partition-all N %) args)
-                     rblks     (apply mapv f args-blks)
-                     result    (apply glue rblks)]
-                 )
-               )])
-  )
-
-(verify-focus
-  (let-spy
-    [as   (thru 0 9)
-     bs   (thru 1 10)
-     r1   (vadd2 as bs)
-     r2   (vadd2-blk 3 as bs)
-     fblk (blkify 3 vadd2)
-     ; rblk (fblk as bs)
-     ]
-    )
-  )
-
-
 
