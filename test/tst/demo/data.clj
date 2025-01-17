@@ -14,8 +14,8 @@
 
 (verify
   (let [seq1 (range 5)
-        arr1 (data-blockify 2 seq1)
-        seq2 (data-ublockify arr1)]
+        arr1 (data-1d->2d 2 seq1)
+        seq2 (data-2d->1d arr1)]
     (is= seq1 [0 1 2 3 4])
     (is= arr1 [[0 1]
                [2 3]
@@ -76,14 +76,14 @@
 
           lazy-fn               (fn lazy-fn []
                                   (let [triangle-2d (map #(range 1 (inc %)) (range 1 (inc N)))
-                                        triangle-1d (data-unblockify-lazy triangle-2d)]
+                                        triangle-1d (data-2d->1d-lazy triangle-2d)]
                                     (is= first-37 (take 37 triangle-1d))
                                     (is= num-triangle-elements (count triangle-1d))
                                     ))
 
           eager-fn              (fn eager-fn []
                                   (let [triangle-2d (mapv #(thru 1 %) (thru 1 N))
-                                        triangle-1d (data-ublockify triangle-2d)]
+                                        triangle-1d (data-2d->1d triangle-2d)]
                                     (is= first-37 (take 37 triangle-1d))
                                     (is= num-triangle-elements (count triangle-1d))
                                     ))]
@@ -111,19 +111,19 @@
           vals     (range N)
 
           lazy-fn  (fn lazy-fn []
-                     (let [data-2d (data-blockify-lazy ncols vals)
-                           data-1d (data-unblockify-lazy data-2d)]
+                     (let [data-2d (data-1d->2d-lazy ncols vals)
+                           data-1d (data-2d->1d-lazy data-2d)]
                        (is= (range 37) (take 37 data-1d))))
 
           #_(comment
               lazy-fn-gen (fn lazy-fn []
-                            (let [data-2d (data-blockify-lazy ncols vals)
+                            (let [data-2d (data-1d->2d-lazy ncols vals)
                                   data-1d (array-2d->1d-lazy-gen data-2d)]
                               (is= (range 37) (take 37 data-1d)))))
 
           eager-fn (fn eager-fn []
-                     (let [data-2d (data-blockify ncols vals)
-                           data-1d (data-ublockify data-2d)]
+                     (let [data-2d (data-1d->2d ncols vals)
+                           data-1d (data-2d->1d data-2d)]
                        (is= (range 37) (take 37 data-1d))))
           ]
 

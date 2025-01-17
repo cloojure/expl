@@ -6,6 +6,7 @@
     [tupelo.schema :as tsk]
     ))
 
+;---------------------------------------------------------------------------------------------------
 (def Interceptor {(s/optional-key :enter) tsk/Fn
                   (s/optional-key :leave) tsk/Fn})
 
@@ -20,7 +21,8 @@
   Optionally accepts an interceptor as the last arg, with :enter & :leave functions like
 
         (fn [ctx] ...)   ; ctx is a map like `{:index idx}`
-   "
+
+   Final result is a non-lazy vector."
   ([N :- s/Num
     f :- tsk/Fn]
    (blockify-fn N f interceptor-default))
@@ -30,44 +32,45 @@
    (let [intc-use (glue interceptor-default intc)]
      (with-map-vals intc-use [enter leave]
        (s/fn fn-blockified :- [s/Any]
-         [& args :- [[s/Any]]]
-         (let [args-blks        (for [arg args]
-                                  (partition-all N arg))
-               blk-args         (apply mapv vector args-blks)
-               blk-args-indexed (zip* {:strict false} (range) blk-args)
+         [& data-vecs :- [[s/Any]]]
+         (let [vecs-blocked      (for [arg data-vecs]
+                                   (partition-all N arg))
+               blkd-vecs         (apply map vector vecs-blocked)
+               blkd-vecs-indexed (zip* {:strict false} (range) blkd-vecs)
 
-               rblks            (forv [[idx blks] blk-args-indexed]
-                                  (enter {:index idx})
-                                  (with-result (apply f blks)
-                                    (leave {:index idx})))
-               ]
-           rblks))))))
+               result-blks       (forv [[idx blks] blkd-vecs-indexed]
+                                   (enter {:index idx})
+                                   (with-result (apply f blks)
+                                     (leave {:index idx})))]
+           result-blks))))))
 
-(s/defn data-blockify-lazy :- [[s/Any]]
+;-----------------------------------------------------------------------------
+(s/defn data-1d->2d-lazy :- [[s/Any]]
   "Convert a 1D sequence to a lazy 2D array (possibly ragged) in row-major order."
   [N :- s/Int
-   data :- [s/Any]]
-  (partition-all N data))
+   data-1d :- [s/Any]]
+  (partition-all N data-1d))
 
-(s/defn data-blockify :- [[s/Any]]
+(s/defn data-1d->2d :- [[s/Any]]
   "Convert a 1D sequence to a 2D array (possibly ragged) in row-major order. Not lazy."
   [N :- s/Int
-   data :- [s/Any]]
-  (unlazy (data-blockify-lazy N data)))
+   data-1d :- [s/Any]]
+  (unlazy (data-1d->2d-lazy N data-1d)))
 
-(s/defn data-ublockify :- [s/Any]
+;-----------------------------------------------------------------------------
+(s/defn data-2d->1d-lazy :- [s/Any]
   "Concatenate rows of a 2D array (possibly ragged), returning a 1-D vector."
-  [blocks :- [[s/Any]]]
-  (apply glue blocks))
+  [data-2d :- [[s/Any]]]
+  (apply concat data-2d))
 
-(s/defn data-unblockify-lazy :- [s/Any]
+(s/defn data-2d->1d :- [s/Any]
   "Concatenate rows of a 2D array (possibly ragged), returning a 1-D vector."
-  [seq-2d :- [[s/Any]]]
-  (apply concat seq-2d))
+  [data-2d :- [[s/Any]]]
+  (unlazy (data-2d->1d-lazy data-2d)))
 
 ; #awt 2024-11-19 works, but no advantage to `(apply concat seq-2d)`
 (comment
-  (s/defn array-2d->1d-lazy-gen :- [s/Any]
+  (s/defn data-2d->1d-lazy-gen :- [s/Any]
     "Concatenate rows of a 2D array (possibly ragged), returning a 1-D vector."
     [seq-2d :- [[s/Any]]]
     (lazy-gen
@@ -75,11 +78,3 @@
         (doseq [item row]
           (yield item))))))
 
-
-
-(defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (spy :main--enter)
-  (spyx args)
-  (spy :main--leave))
