@@ -1,5 +1,5 @@
-(ns tst.demo.util
-  (:use demo.util
+(ns tst.demo.data
+  (:use demo.core
         tupelo.core
         tupelo.test)
   (:require
@@ -10,48 +10,42 @@
 
 (def verbose? true)
 
-(defn inc-1d-fn
-  [xs]
-  (mapv inc xs))
+(defn vinc [xs] (mapv inc xs))
 
 (verify
-  (let [seq1         (range 5)
-        arr1         (data-blockify 2 seq1)
-        seq2         (data-ublockify arr1)
-
-        seq1-inc-a   (inc-1d-fn seq1)
-
-        inc-2d       (blockify-fn 3 inc-1d-fn)
-        seq1-inc-blk (inc-2d seq1)
-        seq1-inc-b   (apply glue seq1-inc-blk)
-
-        ]
+  (let [seq1 (range 5)
+        arr1 (data-blockify 2 seq1)
+        seq2 (data-ublockify arr1)]
     (is= seq1 [0 1 2 3 4])
     (is= arr1 [[0 1]
                [2 3]
                [4]])
-    (is= seq1 seq2)
+    (is= seq1 seq2)))
 
+(verify
+  (let [seq1         (range 5)
+        seq1-inc-a   (vinc seq1)
+
+        vinc-blk     (blockify-fn 3 vinc)
+        seq1-inc-blk (vinc-blk seq1)
+        seq1-inc-b   (apply glue seq1-inc-blk)]
+    (is= seq1 [0 1 2 3 4])
     (is= seq1-inc-a [1 2 3 4 5])
     (is= seq1-inc-blk [[1 2 3] [4 5]])
-    (is= seq1-inc-b [1 2 3 4 5])
-    )
+    (is= seq1-inc-b [1 2 3 4 5]))
 
-  (when false
-    (let-spy
-      [d1 (thru 0 4)
-       d2 (thru 1 5)
+  (let [d1 (thru 0 4)
+        d2 (thru 1 5)
 
-       s1 (mapv + d1 d2)
-       I1 (mapv inc d1)
-       I2 (mapv inc d2)
-       ]
-      (is= d1 [0 1 2 3 4])
-      (is= d2 [1 2 3 4 5])
-      (is= s1 [1 3 5 7 9])
+        s1 (mapv + d1 d2)
+        I1 (mapv inc d1)
+        I2 (mapv inc d2) ]
+    (is= d1 [0 1 2 3 4])
+    (is= d2 [1 2 3 4 5])
+    (is= s1 [1 3 5 7 9])
 
-      (is= I1 [1 2 3 4 5])
-      (is= I2 [2 3 4 5 6]))))
+    (is= I1 [1 2 3 4 5])
+    (is= I2 [2 3 4 5 6])))
 
 (verify
   (let [vecsum     (fn [v] (apply + v))
@@ -60,26 +54,11 @@
         v1         (thru 1 10)
         v1s        (vecsum v1)
 
-        b1         (data-blockify 3 v1)
-        b1s1       (forv [b b1]
-                     (vecsum b))
-
         b1s2       (vecsum-blk v1)
-
-        b1f1       (vecsum b1s1)
-        b1f2       (vecsum b1s2) ]
+        b1f2       (vecsum b1s2)]
     (is= v1s 55)
-
-    (is= b1 [[1 2 3]
-             [4 5 6]
-             [7 8 9]
-             [10]])
-    (is= b1s1 [6 15 24 10])
     (is= b1s2 [6 15 24 10])
-
-    (is= b1f1 55)
-    (is= b1f2 55)
-    ))
+    (is= b1f2 55) ))
 
 
 (verify
