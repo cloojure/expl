@@ -26,7 +26,7 @@
   (let [seq1         (range 5)
         seq1-inc-a   (vinc seq1)
 
-        vinc-blk     (blockify-fn 3 vinc)
+        vinc-blk     (block-fn 3 vinc)
         seq1-inc-blk (vinc-blk seq1)
         seq1-inc-b   (apply glue seq1-inc-blk)]
     (is= seq1 [0 1 2 3 4])
@@ -49,7 +49,7 @@
 
 (verify
   (let [vecsum     (fn [v] (apply + v))
-        vecsum-blk (blockify-fn 3 vecsum)
+        vecsum-blk (block-fn 3 vecsum)
 
         v1         (thru 1 10)
         v1s        (vecsum v1)

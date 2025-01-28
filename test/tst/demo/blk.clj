@@ -10,7 +10,7 @@
 
 (verify
   (let [vecsum (fn [v] (apply + v))
-        vecsum-blk    (blockify-fn 3 vecsum)
+        vecsum-blk    (block-fn 3 vecsum)
 
         v1     (thru 1 10)
         v1s    (vecsum v1)
@@ -48,11 +48,11 @@
                            (prof/with-timer-print :vadd2-time
                              (apply vadd2 args)))
 
-        vadd2-blockified (blockify-fn 3 vadd2-time
-                           {:enter (fn [ctx] (prn :enter (:index ctx)))})
+        vadd2-blockified (block-fn 3 vadd2-time
+                                        {:enter (fn [ctx] (prn :enter (:index ctx)))})
         rs-blk           (vadd2-blockified as bs)
-        r-blk            (apply glue rs-blk)]
-
+        r-blk            (apply glue rs-blk)
+        ]
     (is= as [0 1 2 3 4 5 6 7 8 9])
     (is= bs [1 2 3 4 5 6 7 8 9 10])
 

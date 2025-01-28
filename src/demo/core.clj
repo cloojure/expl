@@ -13,19 +13,11 @@
 (def interceptor-default {:enter noop
                           :leave noop})
 
-(s/defn blockify-fn :- tsk/Fn
-  "Accepts an integer N and a function like `(f as bs ...) => rs` where the `as`, `bs`, etc are
-  input sequences (assumed identical length L), and the `rs` is an output sequence
-  of any length. Returns a function that partitions the inputs into blocks of
-  size N, and calls `f` repeatedly like `(f a1 b1 ...) => r1`, returning a vector like [r1 r2 ....].
-  Optionally accepts an interceptor as the last arg, with :enter & :leave functions like
-
-        (fn [ctx] ...)   ; ctx is a map like `{:index idx}`
-
-   Final result is a non-lazy vector."
+(s/defn block-fn-lazy :- tsk/Fn
+  "Same as `block-fn`, but returns a lazy sequence."
   ([N :- s/Num
     f :- tsk/Fn]
-   (blockify-fn N f interceptor-default))
+   (block-fn-lazy N f interceptor-default))
   ([N :- s/Num
     f :- tsk/Fn
     intc :- Interceptor]
@@ -38,11 +30,29 @@
                blkd-vecs         (apply map vector vecs-blocked)
                blkd-vecs-indexed (zip* {:strict false} (range) blkd-vecs)
 
-               result-blks       (forv [[idx blks] blkd-vecs-indexed]
-                                   (enter {:index idx})
-                                   (with-result (apply f blks)
-                                     (leave {:index idx})))]
+               result-blks       (for [[idx blks] blkd-vecs-indexed]
+                                   (do (enter {:index idx})
+                                       (with-result (apply f blks)
+                                         (leave {:index idx}))))]
            result-blks))))))
+
+(s/defn block-fn :- tsk/Fn
+  "Accepts an integer N and a function like `(f as bs ...) => rs` where the `as`, `bs`, etc are
+  input sequences (assumed identical length L), and the `rs` is an output sequence
+  of any length. Returns a function that partitions the inputs into blocks of
+  size N, and calls `f` repeatedly like `(f a1 b1 ...) => r1`, returning a vector like [r1 r2 ....].
+  Optionally accepts an interceptor as the last arg, with `:enter` & `:leave` functions like
+
+        (fn [ctx] ...)   ; ctx is a map like `{:index idx}`
+
+   Final result is a non-lazy vector."
+  ([N :- s/Num
+    f :- tsk/Fn]
+   (block-fn N f interceptor-default))
+  ([N :- s/Num
+    f :- tsk/Fn
+    intc :- Interceptor]
+   (unlazy (block-fn-lazy N f intc))))
 
 ;-----------------------------------------------------------------------------
 (s/defn data-1d->2d-lazy :- [[s/Any]]
