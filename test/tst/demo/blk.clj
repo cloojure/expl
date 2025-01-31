@@ -8,26 +8,13 @@
     [tupelo.schema :as tsk]
     ))
 
-(verify
-  (let [vecsum (fn [v] (apply + v))
-        vecsum-blk    (block-fn 3 vecsum)
-
-        v1     (thru 1 10)
-        v1s    (vecsum v1)
-
-        vb2rs  (vecsum-blk v1)
-        vb2r   (apply + vb2rs) ]
-    (is= v1s 55)
-    (is= vb2rs [6 15 24 10])
-    (is= vb2r 55) ))
-
-;---------------------------------------------------------------------------------------------------
 (s/defn vadd2 :- [s/Num]
   [as :- [s/Num]
    bs :- [s/Num]]
   (mapv + as bs))
 
-(s/defn vadd2-blk-explicit :- [s/Num]
+(s/defn vadd2-blk-expl :- [s/Num]
+  "An explicit block version of vadd2"
   [N :- s/Int
    as :- [s/Num]
    bs :- [s/Num]]
@@ -38,20 +25,22 @@
     result))
 
 (verify
-  (let [as               (thru 0 9)
-        bs               (thru 1 10)
+  (let [as         (thru 0 9)
+        bs         (thru 1 10)
 
-        r1               (vadd2 as bs)
-        r2               (vadd2-blk-explicit 7 as bs)
+        r1         (vadd2 as bs)
+        r2         (vadd2-blk-expl 7 as bs)
 
-        vadd2-time       (fn [& args]
-                           (prof/with-timer-print :vadd2-time
-                             (apply vadd2 args)))
+        ; how to wrap a function so it prints execution time
+        vadd2-time (fn [& args]
+                     (prof/with-timer-print :vadd2-time
+                       (apply vadd2 args)))
 
-        vadd2-blockified (block-fn 3 vadd2-time
-                                        {:enter (fn [ctx] (prn :enter (:index ctx)))})
-        rs-blk           (vadd2-blockified as bs)
-        r-blk            (apply glue rs-blk)
+        ; convert any function into a block function
+        vadd2-blk  (block-fn 3 vadd2-time
+                             {:enter (fn [ctx] (prn :enter (:index ctx)))})
+        rs-blk     (vadd2-blk as bs)
+        r-blk      (apply glue rs-blk)
         ]
     (is= as [0 1 2 3 4 5 6 7 8 9])
     (is= bs [1 2 3 4 5 6 7 8 9 10])

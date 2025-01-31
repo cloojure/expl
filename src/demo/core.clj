@@ -25,15 +25,16 @@
      (with-map-vals intc-use [enter leave]
        (s/fn fn-blockified :- [s/Any]
          [& data-vecs :- [[s/Any]]]
-         (let [vecs-blocked      (for [arg data-vecs]
-                                   (partition-all N arg))
-               blkd-vecs         (apply map vector vecs-blocked)
-               blkd-vecs-indexed (zip* {:strict false} (range) blkd-vecs)
-
-               result-blks       (for [[idx blks] blkd-vecs-indexed]
-                                   (do (enter {:index idx})
-                                       (with-result (apply f blks)
-                                         (leave {:index idx}))))]
+         (let [blk-count    (atom 0)
+               vecs-blocked (for [arg data-vecs]
+                              (partition-all N arg))
+               blkd-vecs    (apply map vector vecs-blocked)
+               result-blks  (for [blks blkd-vecs]
+                              (let [idx @blk-count]
+                                (enter {:index idx})
+                                (with-result (apply f blks)
+                                  (leave {:index idx})
+                                  (swap! blk-count inc))))]
            result-blks))))))
 
 (s/defn block-fn :- tsk/Fn
