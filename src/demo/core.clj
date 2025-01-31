@@ -77,7 +77,7 @@
 (s/defn data-2d->1d :- [s/Any]
   "Concatenate rows of a 2D array (possibly ragged), returning a 1-D vector."
   [data-2d :- [[s/Any]]]
-  (unlazy (data-2d->1d-lazy data-2d)))
+  (apply glue data-2d))
 
 ; #awt 2024-11-19 works, but no advantage to `(apply concat seq-2d)`
 (comment
