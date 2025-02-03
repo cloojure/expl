@@ -43,8 +43,7 @@
         vadd2-blk (block-fn 3 vadd2-time
                             {:enter (fn [ctx] (prn :enter (:index ctx)))})
         r3-blk    (vadd2-blk data-1 data-2)
-        r3        (apply glue r3-blk)
-        ]
+        r3        (data-2d->1d r3-blk)]
     (is= data-1 [0 1 2 3 4 5 6 7 8 9])
     (is= data-2 [1 2 3 4 5 6 7 8 9 10])
 
