@@ -11,9 +11,10 @@
 
 (defn -main
   [& args]
-  (spy :main--enter)
+  (spy :dbg--main--enter)
+  (nl)
   (do
-    (spyx args)
+    (spyx :dbg--args args)
     ;-----------------------------------------------------------------------------
     ; Results:
     ;-----------------------------------------------------------------------------
@@ -56,18 +57,26 @@
     ;     args => nil   ; stdin => no args to main program
 
     )
-  (let [in-str (slurp (io/reader System/in))
-        in-data (edn/read-string in-str)]
-    (spyx in-str)
-    (spyx in-data)
-    )
+
 
   (if (and
         (= 1 (count args))
         (map? (xfirst args)))
-    (prn :single-map-arg)
-    (prn :other-arg)
-    )
+    (prn :dbg--single-map-arg)
+    (prn :dbg--other-arg))
+  (prn :dbg--cmdline-args)
+  (prn args)
+  (newline)
 
-  (spy :main--leave)
+  (let [in-str (slurp (io/reader System/in))
+          in-data (edn/read-string in-str)]
+      (prn :dbg--in-str in-str)
+      (prn :dbg--in-data in-data)
+      (nl)
+      (prn :dbg--stdio-args)
+      (prn in-data)
+      )
+
+  (nl)
+  (spy :dbg--main--leave)
   )
