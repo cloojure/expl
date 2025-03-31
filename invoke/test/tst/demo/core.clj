@@ -54,6 +54,17 @@
         parsed (edn/read-string result)]
     (is= parsed {:a 1 :b 2 :c 3})))
 
+(s/defn str-args->edn-vec :- [s/Any]
+  [args :- [s/Str]]
+  (mapv edn/read-string args))
+
+(verify
+  (is= [:a 1 :b 2] (str-args->edn-vec [":a" "1" ":b" "2"]))
+  (is= [:a] (str-args->edn-vec [":a 1 :b 2"])) ; ***** only get 1st item if not EDN sequence in string
+  (is= [:a 1 :b 2] (xfirst (str-args->edn-vec ["[:a 1 :b 2]"]))) ; string must be EDN collection to retain all values
+  (is= {:a 1 :b 2} (xfirst (str-args->edn-vec ["{:a 1 :b 2}"]))) ; string must be EDN collection to retain all values
+  )
+
 (s/defn cmdstr->main->edn :- s/Any
   [cmdstr :- s/Str]
   (println "testing cmdstr:    " cmdstr)
@@ -103,13 +114,21 @@
   ; # uses default `-main` entrypoint
   (newline)
 
-  (is= (cmdstr->main->edn "clj -M -m demo.core    :a 1 :b 2")
-    {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
-     :stdio-args   nil})
+  (let [result (cmdstr->main->edn "clj -M -m demo.core    :a 1 :b 2")]
+    (is= result
+      {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
+       :stdio-args   nil})
+    (is= [:a 1 :b 2]
+      (str-args->edn-vec (:cmdline-args result))))
 
-  (is= (cmdstr->main->edn "clj -M -m demo.core    ':a 1 :b 2'")
-    {:cmdline-args '(":a 1 :b 2") ; seq of 1 string
-     :stdio-args   nil})
+  (let [result (cmdstr->main->edn "clj -M -m demo.core    ':a 1 :b 2'")]
+    (is= result
+      {:cmdline-args '(":a 1 :b 2") ; seq of 1 string
+       :stdio-args   nil})
+    (let [edn-map-str (str \{ (first (:cmdline-args result)) \})]
+      (is= "{:a 1 :b 2}" edn-map-str)
+      (is= {:a 1 :b 2}
+        (edn/read-string edn-map-str))))
 
   (let [result (cmdstr->main->edn "clj -M -m demo.core    '{:a 1 :b 2}'")]
     (is= result
@@ -123,13 +142,21 @@
   ; # lein:  uses default `-main` entrypoint
   (newline)
 
-  (is= (cmdstr->main->edn "lein run    :a 1 :b 2")
-    {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
-     :stdio-args   nil})
+  (let [result (cmdstr->main->edn "lein run    :a 1 :b 2")]
+    (is= result
+      {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
+       :stdio-args   nil})
+    (is= [:a 1 :b 2] (str-args->edn-vec (:cmdline-args result))))
 
-  (is= (cmdstr->main->edn "lein run    ':a 1 :b 2'")
-    {:cmdline-args '(":a 1 :b 2") ; seq of 1 string
-     :stdio-args   nil})
+  (let [result (cmdstr->main->edn "lein run    ':a 1 :b 2'")]
+    (is= result
+      {:cmdline-args '(":a 1 :b 2") ; seq of 1 string; NOT EDN collection
+       :stdio-args   nil})
+    (is= [:a] (str-args->edn-vec (:cmdline-args result))) ; ***** lost all but first EDN value
+
+    (let [edn-map-str (str \{ (first (:cmdline-args result)) \})]
+      (is= "{:a 1 :b 2}" edn-map-str)
+      (is= {:a 1 :b 2} (edn/read-string edn-map-str))))
 
   (let [result (cmdstr->main->edn "lein run    '{:a 1 :b 2}'")]
     (is= result
