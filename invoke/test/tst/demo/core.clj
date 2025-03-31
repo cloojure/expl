@@ -39,7 +39,7 @@
         nondbg-lines (drop-if debug-line? out-lines)]
     nondbg-lines))
 
-(verify-focus
+(verify
   (isnt (debug-line? "dbg--a"))
   (is (debug-line? ":dbg--b"))
 
@@ -59,8 +59,12 @@
   (println "testing cmdstr:    " cmdstr)
   (let
     [out          (:out (misc/shell-cmd cmdstr))
+     ;>>           (prn :out)
+     ;>>           (println out)
      keep-lines   (stdout->nondebug-lines out)
-     out-nondebug (str/join keep-lines)
+     out-nondebug (str/join \space keep-lines)
+     ;>>           (prn :out-nondebug)
+     ;>>           (println out-nondebug)
      out-edn      (edn/read-string out-nondebug)]
     ;(nl)
     ;(prn :out)
@@ -73,29 +77,102 @@
         "Clojure" "CLI" "version" "1.12"))
 
   (is= (cmdstr->main->edn "clj -X demo.core/-main  :a 1 :b 2")
-    [{:a 1 :b 2}])  ; implicit EDN map, in a seq
+    {:cmdline-args [{:a 1 :b 2}] ; implicit EDN map, in a seq
+     :stdio-args   nil})
 
   (is= (cmdstr->main->edn "clj -X demo.core/-main  '{ :a 1 :b 2 }'")
-    [{:a 1 :b 2}])  ; explicit EDN map, in a seq
+    {:cmdline-args [{:a 1 :b 2}] ; explicit EDN map, in a seq
+     :stdio-args   nil})
 
   ; deps.edn alias =>  :run  {:exec-fn demo.core/-main}
   (is= (cmdstr->main->edn "clj -X:run demo.core/-main  :a 1 :b 2")
-    [{:a 1 :b 2}])  ; implicit EDN map, in a seq
+    {:cmdline-args [{:a 1 :b 2}] ; implicit EDN map, in a seq
+     :stdio-args   nil})
 
   ; deps.edn alias =>  :run  {:exec-fn demo.core/-main}
   (is= (cmdstr->main->edn "clj -X:run demo.core/-main  '{ :a 1 :b 2 }'")
-    [{:a 1 :b 2}])  ; explicit EDN map, in a seq
+    {:cmdline-args [{:a 1 :b 2}] ; explicit EDN map, in a seq
+     :stdio-args   nil})
   )
 
 ; # uses default `-main` entrypoint
-(verify-focus
+(verify
   (is= (cmdstr->main->edn "clj -M -m demo.core    :a 1 :b 2")
-    '(":a" "1" ":b" "2")) ; seq of strings
+    {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
+     :stdio-args   nil})
 
   (is= (cmdstr->main->edn "clj -M -m demo.core    ':a 1 :b 2'")
-    '(":a 1 :b 2")) ; seq of 1 string
+    {:cmdline-args '(":a 1 :b 2") ; seq of 1 string
+     :stdio-args   nil})
 
   (let [result (cmdstr->main->edn "clj -M -m demo.core    '{:a 1 :b 2}'")]
-    (is= result '("{:a 1 :b 2}")) ; seq of 1 string
-    (is= (edn/read-string (xfirst result)) {:a 1 :b 2}) ; map from 1st string
-  ))
+    (is= result
+      {:cmdline-args '("{:a 1 :b 2}") ; seq of 1 string
+       :stdio-args   nil})
+
+    (is= {:a 1 :b 2} ; map from 1st string
+      (edn/read-string (xfirst (:cmdline-args result)))))
+  )
+
+; # lein:  uses default `-main` entrypoint
+(verify
+  (is= (cmdstr->main->edn "lein run    :a 1 :b 2")
+    {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
+     :stdio-args   nil})
+
+  (is= (cmdstr->main->edn "lein run    ':a 1 :b 2'")
+    {:cmdline-args '(":a 1 :b 2") ; seq of 1 string
+     :stdio-args   nil})
+
+  (let [result (cmdstr->main->edn "lein run    '{:a 1 :b 2}'")]
+    (is= result
+      {:cmdline-args '("{:a 1 :b 2}") ; seq of 1 string
+       :stdio-args   nil})
+    (is=
+      {:a 1 :b 2} ; map from 1st string
+      (edn/read-string (xfirst (:cmdline-args result)))))
+  )
+
+; # java -jar ./target/xxxxxx-standalone.jar :  uses default `-main` entrypoint
+(verify
+  (let [result (:out (misc/shell-cmd "lein clean; lein uberjar"))]
+    ; (prn :result)
+    ; (println result)
+    )
+
+  (is= (cmdstr->main->edn "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  :a 1 :b 2")
+    {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
+     :stdio-args   nil})
+
+  (let [result (cmdstr->main->edn "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  '{:a 1 :b 2}'")]
+    ;(prn :result)
+    ;(println result)
+    (is= result
+      {:cmdline-args ["{:a 1 :b 2}"] ; seq of 1 string
+       :stdio-args   nil})
+
+    (is= {:a 1 :b 2} ; map from 1st string
+      (edn/read-string (xfirst (:cmdline-args result)))))
+
+  (let [result (cmdstr->main->edn
+                 "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  <<EOF
+                   {:a 1
+                    :b 2 }
+                   EOD")]
+    (is= result {:cmdline-args nil
+                 :stdio-args   {:a 1 :b 2}}) ; parsed multi-line string from stdio
+    )
+
+  ; You *COULD* mix params from cmdline and stdio, but *PLEASE* just choose only one technique!!!
+  (let [result (cmdstr->main->edn
+                     "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  '{:x 7 :y 9}' <<EOF
+                       {:a 1
+                        :b 2 }
+                       EOD")]
+    (prn :result)
+    (println result)
+    (is= result {:cmdline-args ["{:x 7 :y 9}"] ; a seq of 1 string, ready to be parsed
+                 :stdio-args   {:a 1 :b 2}}) ; parsed multi-line string from stdio
+    )
+
+  )

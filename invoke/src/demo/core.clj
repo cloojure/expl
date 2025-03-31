@@ -9,10 +9,11 @@
 (defn add2-public [x y] (+ x y))
 (defn- add2-private [x y] (+ x y))
 
+; NOTE:  Testing code will strip all output to STDIO containing fragment ":dbg--".
+;        All other output will be parsed into an EDN expression
 (defn -main
   [& args]
   (spy :dbg--main--enter)
-  (nl)
   (do
     (spyx :dbg--args args)
     ;-----------------------------------------------------------------------------
@@ -55,28 +56,29 @@
     ; heredoc> EOF
     ;
     ;     args => nil   ; stdin => no args to main program
-
     )
 
-
+  ; informational printout
   (if (and
         (= 1 (count args))
         (map? (xfirst args)))
-    (prn :dbg--single-map-arg)
-    (prn :dbg--other-arg))
-  (prn :dbg--cmdline-args)
-  (prn args)
-  (newline)
+    (prn :dbg--args-single-map)
+    (prn :dbg--args-other))
 
-  (let [in-str (slurp (io/reader System/in))
-          in-data (edn/read-string in-str)]
-      (prn :dbg--in-str in-str)
-      (prn :dbg--in-data in-data)
-      (nl)
-      (prn :dbg--stdio-args)
-      (prn in-data)
-      )
-
+  (println "{")     ; beginning of EDN output map
+  (prn :cmdline-args) ; key of mapentry #1
+  (prn args)        ; val of mapentry #1
   (nl)
+
+  (let [in-str  (slurp (io/reader System/in))
+        in-data (edn/read-string in-str)]
+    (prn :dbg--in-str in-str)
+    (prn :dbg--in-data in-data)
+    (nl)
+    (prn :stdio-args) ; key of mapentry #2
+    (prn in-data)   ; val of mapentry #2
+    )
+  (println "}")     ; end of EDN output map
+
   (spy :dbg--main--leave)
   )
