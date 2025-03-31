@@ -76,6 +76,10 @@
   (is (str/contains-str-frags? (:out (misc/shell-cmd "clj --version"))
         "Clojure" "CLI" "version" "1.12"))
 
+  ;---------------------------------------------------------------------------------------------------
+  ; # explicit call to `-main` entrypoint
+  (newline)
+
   (is= (cmdstr->main->edn "clj -X demo.core/-main  :a 1 :b 2")
     {:cmdline-args [{:a 1 :b 2}] ; implicit EDN map, in a seq
      :stdio-args   nil})
@@ -93,10 +97,12 @@
   (is= (cmdstr->main->edn "clj -X:run demo.core/-main  '{ :a 1 :b 2 }'")
     {:cmdline-args [{:a 1 :b 2}] ; explicit EDN map, in a seq
      :stdio-args   nil})
-  )
 
-; # uses default `-main` entrypoint
-(verify
+
+  ;---------------------------------------------------------------------------------------------------
+  ; # uses default `-main` entrypoint
+  (newline)
+
   (is= (cmdstr->main->edn "clj -M -m demo.core    :a 1 :b 2")
     {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
      :stdio-args   nil})
@@ -112,10 +118,11 @@
 
     (is= {:a 1 :b 2} ; map from 1st string
       (edn/read-string (xfirst (:cmdline-args result)))))
-  )
 
-; # lein:  uses default `-main` entrypoint
-(verify
+  ;---------------------------------------------------------------------------------------------------
+  ; # lein:  uses default `-main` entrypoint
+  (newline)
+
   (is= (cmdstr->main->edn "lein run    :a 1 :b 2")
     {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
      :stdio-args   nil})
@@ -129,17 +136,20 @@
       {:cmdline-args '("{:a 1 :b 2}") ; seq of 1 string
        :stdio-args   nil})
     (is=
-      {:a 1 :b 2} ; map from 1st string
+      {:a 1 :b 2}   ; map from 1st string
       (edn/read-string (xfirst (:cmdline-args result)))))
-  )
 
-; # java -jar ./target/xxxxxx-standalone.jar :  uses default `-main` entrypoint
-(verify
+  ;---------------------------------------------------------------------------------------------------
+  ; # java -jar ./target/xxxxxx-standalone.jar :  uses default `-main` entrypoint
+  (newline)
+
+  ; create the uberjar
   (let [result (:out (misc/shell-cmd "lein clean; lein uberjar"))]
-    ; (prn :result)
-    ; (println result)
-    )
+    (println "***** creating uberjar*****")
+    (newline)
+    (println result))
 
+  (newline)
   (is= (cmdstr->main->edn "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  :a 1 :b 2")
     {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
      :stdio-args   nil})
@@ -165,12 +175,12 @@
 
   ; You *COULD* mix params from cmdline and stdio, but *PLEASE* just choose only one technique!!!
   (let [result (cmdstr->main->edn
-                     "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  '{:x 7 :y 9}' <<EOF
-                       {:a 1
-                        :b 2 }
-                       EOD")]
-    (prn :result)
-    (println result)
+                 "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  '{:x 7 :y 9}' <<EOF
+                   {:a 1
+                    :b 2 }
+                   EOD")]
+    ;(prn :result)
+    ;(println result)
     (is= result {:cmdline-args ["{:x 7 :y 9}"] ; a seq of 1 string, ready to be parsed
                  :stdio-args   {:a 1 :b 2}}) ; parsed multi-line string from stdio
     )
