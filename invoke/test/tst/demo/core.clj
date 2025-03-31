@@ -83,10 +83,17 @@
     ;(nl)
     out-edn))
 
+; ***** see sdkman.io for best way to install/use/upgrade Java JDK *****
 (verify
+  (it-> (:out (misc/shell-cmd "java --version"))
+    (is (or (str/contains-str-frags? it "OpenJDK Runtime Environment" "build") ; OpenJDK
+            (str/contains-str-frags? it "Java HotSpot" "build")))) ; Oracle
   (is (str/contains-str-frags? (:out (misc/shell-cmd "clj --version"))
         "Clojure" "CLI" "version" "1.12"))
+  (is (str/contains-str-frags? (:out (misc/shell-cmd "lein --version"))
+        "Leiningen 2." "on" "Java" )))
 
+(verify
   ;---------------------------------------------------------------------------------------------------
   ; # explicit call to `-main` entrypoint
   (newline)
