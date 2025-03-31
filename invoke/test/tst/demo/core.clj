@@ -168,7 +168,7 @@
                  "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  <<EOF
                    {:a 1
                     :b 2 }
-                   EOD")]
+                   EOF")]
     (is= result {:cmdline-args nil
                  :stdio-args   {:a 1 :b 2}}) ; parsed multi-line string from stdio
     )
@@ -178,7 +178,7 @@
                  "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  '{:x 7 :y 9}' <<EOF
                    {:a 1
                     :b 2 }
-                   EOD")]
+                   EOF")]
     ;(prn :result)
     ;(println result)
     (is= result {:cmdline-args ["{:x 7 :y 9}"] ; a seq of 1 string, ready to be parsed
