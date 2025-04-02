@@ -60,7 +60,7 @@
 
 (verify
   (is= [:a 1 :b 2] (str-args->edn-vec [":a" "1" ":b" "2"]))
-  (is= [:a] (str-args->edn-vec [":a 1 :b 2"])) ; ***** only get 1st item if not EDN sequence in string
+  (is= [:a] (str-args->edn-vec [":a 1 :b 2"])) ; ***** only get 1st item if not EDN collection in string
   (is= [:a 1 :b 2] (xfirst (str-args->edn-vec ["[:a 1 :b 2]"]))) ; string must be EDN collection to retain all values
   (is= {:a 1 :b 2} (xfirst (str-args->edn-vec ["{:a 1 :b 2}"]))) ; string must be EDN collection to retain all values
   )
