@@ -7,90 +7,11 @@
     [tupelo.schema :as tsk])
   (:gen-class))
 
-; NOTE:  Testing code will strip all output to STDIO containing fragment ":dbg--".
-;        All other output will be parsed into an EDN expression
-(defn -main
-  [& args]
-  (spy :dbg--main--enter)
-  (do
-    (spyx :dbg--args args)
-    ;-----------------------------------------------------------------------------
-    ; Results:
-    ;-----------------------------------------------------------------------------
-    ; > clj -X demo.core/-main  :a 1 :b 2
-    ;     => ({:a 0, :b 2})     # implicit EDN map, in a seq
-    ;
-    ; > clj -X demo.core/-main  '{ :a 1 :b 2 }'
-    ;     => ({:a 0, :b 2})     # explicit EDN map, in a seq
-    ;
-    ; > clj -X:run  :a 1 :b 2   # deps.edn alias =>  :run  {:exec-fn demo.core/-main}
-    ;     => ({:a 1, :b 2})     # implicit EDN map, in a seq
-    ;
-    ;-----------------------------------------------------------------------------
-    ; > clj -M -m demo.core    :a 1 :b 2      # uses default `-main` entrypoint
-    ;     => (":a" "1" ":b" "2")    # seq of strings
-    ;
-    ; > clj -M -m demo.core   ':a 1 :b 2'     # uses default `-main` entrypoint
-    ;     => (":a 1 :b 2")          # seq of 1 string
-    ;
-    ; > clj -M -m demo.core  '{:a 1 :b 2}'    # uses default `-main` entrypoint
-    ;     => ("{ :a 1 :b 2 }")      # seq of 1 string
-    ;
-    ;-----------------------------------------------------------------------------
-    ; > lein run  :a 1 :b 2
-    ;     => (":a" "1" ":b" "2")      # seq of strings
-    ;
-    ; > lein uberjar                  # create the uberjar
-    ;
-    ; > java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  :a 1 :b 2
-    ;       => [":a" "1" ":b" "2"]    # seq of strings
-    ;
-    ; > java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  '{ :a 1 :b 2 }'
-    ;       => ["{ :a 1 :b 2 }"]      # seq of 1 string
-    ;
-    ; > java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  <<EOF
-    ; heredoc> { :a 1
-    ; heredoc>   :b 2 }
-    ; heredoc> EOF
-    ;
-    ;     args => nil   ; stdin => no args to main program
-    )
 
-  ; informational printout
-  (if (and
-        (= 1 (count args))
-        (map? (xfirst args)))
-    (prn :dbg--args-single-map)
-    (prn :dbg--args-other))
-
-  (println "{")     ; beginning of EDN output map
-  (prn :cmdline-args) ; key of mapentry #1
-  (prn args)        ; val of mapentry #1
-  (nl)
-
-  (let [in-str  (slurp (io/reader System/in))
-        in-data (edn/read-string in-str)]
-    (prn :dbg--in-str in-str)
-    (prn :dbg--in-data in-data)
-    (nl)
-    (prn :stdio-args) ; key of mapentry #2
-    (prn in-data)   ; val of mapentry #2
-    )
-  (println "}")     ; end of EDN output map
-
-  (spy :dbg--main--leave)
-  )
-
-(s/defn main-x
-  "Call like either:
-        clj -X demo.core/-main     :a 1 :b 2
-        clj -X demo.core/-main  '{ :a 1 :b 2 }'  "
-  [opts :- tsk/KeyMap]
-  (prn opts))
-
-(s/defn -main2
+(s/defn -main
   "Call like this (fully-qualified function name):
-        clj -M -m demo.core/main-m  '{ :a 1 :b 2 }'  " ; explicit EDN map
+        clj -M -m demo.core  '{ :a 1 :b 2 }'  " ; explicit EDN map
   [arg-str :- s/Str]
+  (assert (string? arg-str)) ; verify
   (let [opts (edn/read-string arg-str)]
     (prn opts)))

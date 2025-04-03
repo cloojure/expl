@@ -1,25 +1,21 @@
-(ns tst.demo.core-x
+(ns ^:test-refresh/focus tst.demo.core-x
   (:use demo.core-x
         tupelo.core
         tupelo.test)
   (:require
-    [clojure.edn :as edn]
-    [schema.core :as s]
-    [tupelo.misc :as misc]
-    [tupelo.schema :as tsk]
-    [tupelo.string :as str]
+    [demo.debug :as dbg]
     ))
 
-(verify-focus
-  ;---------------------------------------------------------------------------------------------------
-  ; # explicit call to `-main` entrypoint
-  (newline)
+(verify ; Use an explicit EDN map in a single-quote string
+  ; implicit `-main` doesn't work
+  (throws?         (dbg/cmdstr->main->edn "clj -X demo.core-x           '{ :a 1 :b 2 }'"))
 
-  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X demo.core/main-x     :a 1 :b 2   ")) ; implicit EDN map
-  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X demo.core/main-x  '{ :a 1 :b 2 }'")) ; explicit EDN map
+  ; # explicit call to `-main` entrypoint
+  (is= {:a 1 :b 2} (dbg/cmdstr->main->edn "clj -X demo.core-x/-main     '{ :a 1 :b 2 }'"))
 
   ; in `deps.edn`, we have define `run-x` => demo.core/main-x
-  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X:run-x      :a 1 :b 2   ")) ; implicit EDN map
-  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X:run-x   '{ :a 1 :b 2 }'")) ; explicit EDN map
-  )
+  (is= {:a 1 :b 2} (dbg/cmdstr->main->edn "clj -X:run-x                 '{ :a 1 :b 2 }'"))
+
+  ; # explicit call to arbitrary function
+  (is= {:a 1 :b 2} (dbg/cmdstr->main->edn "clj -X demo.core-x/any-func  '{ :a 1 :b 2 }'")))
 

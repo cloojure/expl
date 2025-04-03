@@ -2,9 +2,11 @@
   (:use tupelo.core)
   (:require
     [clojure.edn :as edn]
-    [clojure.java.io :as io]
     [schema.core :as s]
-    [tupelo.schema :as tsk])
+    [tupelo.misc :as misc]
+    [tupelo.schema :as tsk]
+    [tupelo.string :as str]
+    )
   (:gen-class))
 
 (s/defn debug-line? :- s/Bool
@@ -24,13 +26,6 @@
   "Converts a sequence of string args into a vector of EDN data"
   [args :- [s/Str]]
   (mapv edn/read-string args))
-
-(verify
-  (is= [:a 1 :b 2] (str-args->edn-vec [":a" "1" ":b" "2"]))
-  (is= [:a] (str-args->edn-vec [":a 1 :b 2"])) ; ***** only get 1st item if not EDN collection in string
-  (is= [:a 1 :b 2] (xfirst (str-args->edn-vec ["[:a 1 :b 2]"]))) ; string must be EDN collection to retain all values
-  (is= {:a 1 :b 2} (xfirst (str-args->edn-vec ["{:a 1 :b 2}"]))) ; string must be EDN collection to retain all values
-  )
 
 (s/defn cmdstr->main->edn :- s/Any
   "Execute a BASH command-string that invokes `-main`, parse the stdout (after removing debug
@@ -52,3 +47,10 @@
     ;(nl)
     out-edn))
 
+(s/defn -main
+  "Call like either:
+        clj -X demo.debug/-main     :a 1 :b 2           (implicit EDN map)
+        clj -X demo.debug/-main  '{ :a 1 :b 2 }'        (explicit EDN map)"
+  [opts :- tsk/KeyMap] ; Clojure converts args to EDN map automatically
+  (assert (map? opts)) ; verify
+  (prn opts))

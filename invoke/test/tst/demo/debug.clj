@@ -1,12 +1,10 @@
-(ns tst.demo.debug
+(ns ^:test-refresh/focus tst.demo.debug
   (:use demo.debug
         tupelo.core
         tupelo.test)
   (:require
     [clojure.edn :as edn]
-    [schema.core :as s]
     [tupelo.misc :as misc]
-    [tupelo.schema :as tsk]
     [tupelo.string :as str]
     ))
 
@@ -39,19 +37,6 @@
   (throws? (hash-map [:a 1 :b 2]))
   (throws? (edn/read-string [":a" "1" ":b" "2"])))
 
-(s/defn debug-line? :- s/Bool
-  "Returns true iff a string contains a debug output line."
-  [s :- s/Str]
-  (str/contains-str? s ":dbg--"))
-
-(s/defn stdout->nondebug-lines :- [s/Str]
-  "Takes a multi-line string (e.g. from stdout), splits into separate lines, and removes all
-  debug output lines."
-  [outstr :- s/Str]
-  (let [out-lines    (str/split-lines outstr)
-        nondbg-lines (drop-if debug-line? out-lines)]
-    nondbg-lines))
-
 ; verify ability to strip out all debut lines
 (verify
   (isnt (debug-line? "dbg--a"))
@@ -67,11 +52,6 @@
         parsed (edn/read-string result)]
     (is= parsed {:a 1 :b 2 :c 3})))
 
-(s/defn str-args->edn-vec :- [s/Any]
-  "Converts a sequence of string args into a vector of EDN data"
-  [args :- [s/Str]]
-  (mapv edn/read-string args))
-
 (verify
   (is= [:a 1 :b 2] (str-args->edn-vec [":a" "1" ":b" "2"]))
   (is= [:a] (str-args->edn-vec [":a 1 :b 2"])) ; ***** only get 1st item if not EDN collection in string
@@ -79,173 +59,9 @@
   (is= {:a 1 :b 2} (xfirst (str-args->edn-vec ["{:a 1 :b 2}"]))) ; string must be EDN collection to retain all values
   )
 
-(s/defn cmdstr->main->edn :- s/Any
-  "Execute a BASH command-string that invokes `-main`, parse the stdout (after removing debug
-  lines), returning the result as EDN data."
-  [cmdstr :- s/Str]
-  (println "testing cmdstr:    " cmdstr)
-  (let
-    [out          (:out (misc/shell-cmd cmdstr))
-     ;>>           (prn :out)
-     ;>>           (println out)
-     keep-lines   (stdout->nondebug-lines out)
-     out-nondebug (str/join \space keep-lines)
-     ;>>           (prn :out-nondebug)
-     ;>>           (println out-nondebug)
-     out-edn      (edn/read-string out-nondebug)]
-    ;(nl)
-    ;(prn :out)
-    ;(println out)
-    ;(nl)
-    out-edn))
-
-(verify
-  ;---------------------------------------------------------------------------------------------------
-  ; # explicit call to `-main` entrypoint
+(verify ; # explicit call to `-main` entrypoint
   (newline)
-
-  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X demo.core/main-x     :a 1 :b 2   ")) ; implicit EDN map
-  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X demo.core/main-x  '{ :a 1 :b 2 }'")) ; explicit EDN map
-
-  ; in `deps.edn`, we have define `run-x` => demo.core/main-x
-  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X:run-x      :a 1 :b 2   ")) ; implicit EDN map
-  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X:run-x   '{ :a 1 :b 2 }'")) ; explicit EDN map
+  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X demo.debug/-main     :a 1 :b 2   ")) ; implicit EDN map
+  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X demo.debug/-main  '{ :a 1 :b 2 }'")) ; explicit EDN map
   )
 
-(verify
-  ;---------------------------------------------------------------------------------------------------
-  ; # explicit call to `-main` entrypoint
-  (newline)
-
-  (is= {:a 91 :b 2} (cmdstr->main->edn "clj -M -m demo.core/-main2  '{ :a 1 :b 2 }'")) ; explicit
-  ; EDN map
-  )
-
-
-(verify
-  ;---------------------------------------------------------------------------------------------------
-  ; # explicit call to `-main` entrypoint
-  (newline)
-
-  (is= (cmdstr->main->edn "clj -X demo.core/-main  :a 1 :b 2")
-    {:cmdline-args [{:a 1 :b 2}] ; implicit EDN map, in a seq
-     :stdio-args   nil})
-
-  (is= (cmdstr->main->edn "clj -X demo.core/-main  '{ :a 1 :b 2 }'")
-    {:cmdline-args [{:a 1 :b 2}] ; explicit EDN map, in a seq
-     :stdio-args   nil})
-
-  ; deps.edn alias =>  :run  {:exec-fn demo.core/-main}
-  (is= (cmdstr->main->edn "clj -X:run      :a 1 :b 2")
-    {:cmdline-args [{:a 1 :b 2}] ; implicit EDN map, in a seq
-     :stdio-args   nil})
-
-  ; deps.edn alias =>  :run  {:exec-fn demo.core/-main}
-  (is= (cmdstr->main->edn "clj -X:run   '{ :a 1 :b 2 }'")
-    {:cmdline-args [{:a 1 :b 2}] ; explicit EDN map, in a seq
-     :stdio-args   nil})
-
-
-  ;---------------------------------------------------------------------------------------------------
-  ; # uses default `-main` entrypoint
-  (newline)
-
-  (let [result (cmdstr->main->edn "clj -M -m demo.core    :a 1 :b 2")]
-    (is= result
-      {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
-       :stdio-args   nil})
-    (is= [:a 1 :b 2]
-      (str-args->edn-vec (:cmdline-args result))))
-
-  (let [result (cmdstr->main->edn "clj -M -m demo.core    ':a 1 :b 2'")]
-    (is= result
-      {:cmdline-args '(":a 1 :b 2") ; seq of 1 string
-       :stdio-args   nil})
-    (let [edn-map-str (str \{ (first (:cmdline-args result)) \})]
-      (is= "{:a 1 :b 2}" edn-map-str)
-      (is= {:a 1 :b 2}
-        (edn/read-string edn-map-str))))
-
-  (let [result (cmdstr->main->edn "clj -M -m demo.core    '{:a 1 :b 2}'")]
-    (is= result
-      {:cmdline-args '("{:a 1 :b 2}") ; seq of 1 string
-       :stdio-args   nil})
-
-    (is= {:a 1 :b 2} ; map from 1st string
-      (edn/read-string (xfirst (:cmdline-args result)))))
-
-  ;---------------------------------------------------------------------------------------------------
-  ; # lein:  uses default `-main` entrypoint
-  (newline)
-
-  (let [result (cmdstr->main->edn "lein run    :a 1 :b 2")]
-    (is= result
-      {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
-       :stdio-args   nil})
-    (is= [:a 1 :b 2] (str-args->edn-vec (:cmdline-args result))))
-
-  (let [result (cmdstr->main->edn "lein run    ':a 1 :b 2'")]
-    (is= result
-      {:cmdline-args '(":a 1 :b 2") ; seq of 1 string; NOT EDN collection
-       :stdio-args   nil})
-    (is= [:a] (str-args->edn-vec (:cmdline-args result))) ; ***** lost all but first EDN value
-
-    (let [edn-map-str (str \{ (first (:cmdline-args result)) \})]
-      (is= "{:a 1 :b 2}" edn-map-str)
-      (is= {:a 1 :b 2} (edn/read-string edn-map-str))))
-
-  (let [result (cmdstr->main->edn "lein run    '{:a 1 :b 2}'")]
-    (is= result
-      {:cmdline-args '("{:a 1 :b 2}") ; seq of 1 string
-       :stdio-args   nil})
-    (is=
-      {:a 1 :b 2}   ; map from 1st string
-      (edn/read-string (xfirst (:cmdline-args result)))))
-
-  ;---------------------------------------------------------------------------------------------------
-  ; # java -jar ./target/xxxxxx-standalone.jar :  uses default `-main` entrypoint
-  (newline)
-
-  ; create the uberjar
-  (let [result (:out (misc/shell-cmd "lein clean; lein uberjar"))]
-    (println "***** creating uberjar*****")
-    (newline)
-    (println result))
-
-  (newline)
-  (is= (cmdstr->main->edn "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  :a 1 :b 2")
-    {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
-     :stdio-args   nil})
-
-  (let [result (cmdstr->main->edn "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  '{:a 1 :b 2}'")]
-    ;(prn :result)
-    ;(println result)
-    (is= result
-      {:cmdline-args ["{:a 1 :b 2}"] ; seq of 1 string
-       :stdio-args   nil})
-
-    (is= {:a 1 :b 2} ; map from 1st string
-      (edn/read-string (xfirst (:cmdline-args result)))))
-
-  (let [result (cmdstr->main->edn
-                 "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  <<EOF
-                   {:a 1
-                    :b 2 }
-                   EOF")]
-    (is= result {:cmdline-args nil
-                 :stdio-args   {:a 1 :b 2}}) ; parsed multi-line string from stdio
-    )
-
-  ; You *COULD* mix params from cmdline and stdio, but *PLEASE* just choose only one technique!!!
-  (let [result (cmdstr->main->edn
-                 "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  '{:x 7 :y 9}' <<EOF
-                   {:a 1
-                    :b 2 }
-                   EOF")]
-    ;(prn :result)
-    ;(println result)
-    (is= result {:cmdline-args ["{:x 7 :y 9}"] ; a seq of 1 string, ready to be parsed
-                 :stdio-args   {:a 1 :b 2}}) ; parsed multi-line string from stdio
-    )
-
-  )

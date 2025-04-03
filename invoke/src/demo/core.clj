@@ -81,13 +81,6 @@
   (spy :dbg--main--leave)
   )
 
-(s/defn main-x
-  "Call like either:
-        clj -X demo.core/-main     :a 1 :b 2
-        clj -X demo.core/-main  '{ :a 1 :b 2 }'  "
-  [opts :- tsk/KeyMap]
-  (prn opts))
-
 (s/defn -main2
   "Call like this (fully-qualified function name):
         clj -M -m demo.core/main-m  '{ :a 1 :b 2 }'  " ; explicit EDN map

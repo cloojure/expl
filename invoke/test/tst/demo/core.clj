@@ -4,6 +4,7 @@
         tupelo.test)
   (:require
     [clojure.edn :as edn]
+    [demo.debug :as dbg]
     [schema.core :as s]
     [tupelo.misc :as misc]
     [tupelo.schema :as tsk]
@@ -15,12 +16,12 @@
   ; # explicit call to `-main` entrypoint
   (newline)
 
-  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X demo.core/main-x     :a 1 :b 2   ")) ; implicit EDN map
-  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X demo.core/main-x  '{ :a 1 :b 2 }'")) ; explicit EDN map
+  (is= {:a 1 :b 2} (dbg/cmdstr->main->edn "clj -X demo.core/main-x     :a 1 :b 2   ")) ; implicit EDN map
+  (is= {:a 1 :b 2} (dbg/cmdstr->main->edn "clj -X demo.core/main-x  '{ :a 1 :b 2 }'")) ; explicit EDN map
 
   ; in `deps.edn`, we have define `run-x` => demo.core/main-x
-  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X:run-x      :a 1 :b 2   ")) ; implicit EDN map
-  (is= {:a 1 :b 2} (cmdstr->main->edn "clj -X:run-x   '{ :a 1 :b 2 }'")) ; explicit EDN map
+  (is= {:a 1 :b 2} (dbg/cmdstr->main->edn "clj -X:run-x      :a 1 :b 2   ")) ; implicit EDN map
+  (is= {:a 1 :b 2} (dbg/cmdstr->main->edn "clj -X:run-x   '{ :a 1 :b 2 }'")) ; explicit EDN map
   )
 
 (verify
@@ -28,7 +29,7 @@
   ; # explicit call to `-main` entrypoint
   (newline)
 
-  (is= {:a 91 :b 2} (cmdstr->main->edn "clj -M -m demo.core/-main2  '{ :a 1 :b 2 }'")) ; explicit
+  (is= {:a 91 :b 2} (dbg/cmdstr->main->edn "clj -M -m demo.core/-main2  '{ :a 1 :b 2 }'")) ; explicit
   ; EDN map
   )
 
@@ -38,21 +39,21 @@
   ; # explicit call to `-main` entrypoint
   (newline)
 
-  (is= (cmdstr->main->edn "clj -X demo.core/-main  :a 1 :b 2")
+  (is= (dbg/cmdstr->main->edn "clj -X demo.core/-main  :a 1 :b 2")
     {:cmdline-args [{:a 1 :b 2}] ; implicit EDN map, in a seq
      :stdio-args   nil})
 
-  (is= (cmdstr->main->edn "clj -X demo.core/-main  '{ :a 1 :b 2 }'")
+  (is= (dbg/cmdstr->main->edn "clj -X demo.core/-main  '{ :a 1 :b 2 }'")
     {:cmdline-args [{:a 1 :b 2}] ; explicit EDN map, in a seq
      :stdio-args   nil})
 
   ; deps.edn alias =>  :run  {:exec-fn demo.core/-main}
-  (is= (cmdstr->main->edn "clj -X:run      :a 1 :b 2")
+  (is= (dbg/cmdstr->main->edn "clj -X:run      :a 1 :b 2")
     {:cmdline-args [{:a 1 :b 2}] ; implicit EDN map, in a seq
      :stdio-args   nil})
 
   ; deps.edn alias =>  :run  {:exec-fn demo.core/-main}
-  (is= (cmdstr->main->edn "clj -X:run   '{ :a 1 :b 2 }'")
+  (is= (dbg/cmdstr->main->edn "clj -X:run   '{ :a 1 :b 2 }'")
     {:cmdline-args [{:a 1 :b 2}] ; explicit EDN map, in a seq
      :stdio-args   nil})
 
@@ -61,14 +62,14 @@
   ; # uses default `-main` entrypoint
   (newline)
 
-  (let [result (cmdstr->main->edn "clj -M -m demo.core    :a 1 :b 2")]
+  (let [result (dbg/cmdstr->main->edn "clj -M -m demo.core    :a 1 :b 2")]
     (is= result
       {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
        :stdio-args   nil})
     (is= [:a 1 :b 2]
-      (str-args->edn-vec (:cmdline-args result))))
+      (dbg/str-args->edn-vec (:cmdline-args result))))
 
-  (let [result (cmdstr->main->edn "clj -M -m demo.core    ':a 1 :b 2'")]
+  (let [result (dbg/cmdstr->main->edn "clj -M -m demo.core    ':a 1 :b 2'")]
     (is= result
       {:cmdline-args '(":a 1 :b 2") ; seq of 1 string
        :stdio-args   nil})
@@ -77,7 +78,7 @@
       (is= {:a 1 :b 2}
         (edn/read-string edn-map-str))))
 
-  (let [result (cmdstr->main->edn "clj -M -m demo.core    '{:a 1 :b 2}'")]
+  (let [result (dbg/cmdstr->main->edn "clj -M -m demo.core    '{:a 1 :b 2}'")]
     (is= result
       {:cmdline-args '("{:a 1 :b 2}") ; seq of 1 string
        :stdio-args   nil})
@@ -89,23 +90,23 @@
   ; # lein:  uses default `-main` entrypoint
   (newline)
 
-  (let [result (cmdstr->main->edn "lein run    :a 1 :b 2")]
+  (let [result (dbg/cmdstr->main->edn "lein run    :a 1 :b 2")]
     (is= result
       {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
        :stdio-args   nil})
-    (is= [:a 1 :b 2] (str-args->edn-vec (:cmdline-args result))))
+    (is= [:a 1 :b 2] (dbg/str-args->edn-vec (:cmdline-args result))))
 
-  (let [result (cmdstr->main->edn "lein run    ':a 1 :b 2'")]
+  (let [result (dbg/cmdstr->main->edn "lein run    ':a 1 :b 2'")]
     (is= result
       {:cmdline-args '(":a 1 :b 2") ; seq of 1 string; NOT EDN collection
        :stdio-args   nil})
-    (is= [:a] (str-args->edn-vec (:cmdline-args result))) ; ***** lost all but first EDN value
+    (is= [:a] (dbg/str-args->edn-vec (:cmdline-args result))) ; ***** lost all but first EDN value
 
     (let [edn-map-str (str \{ (first (:cmdline-args result)) \})]
       (is= "{:a 1 :b 2}" edn-map-str)
       (is= {:a 1 :b 2} (edn/read-string edn-map-str))))
 
-  (let [result (cmdstr->main->edn "lein run    '{:a 1 :b 2}'")]
+  (let [result (dbg/cmdstr->main->edn "lein run    '{:a 1 :b 2}'")]
     (is= result
       {:cmdline-args '("{:a 1 :b 2}") ; seq of 1 string
        :stdio-args   nil})
@@ -124,11 +125,11 @@
     (println result))
 
   (newline)
-  (is= (cmdstr->main->edn "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  :a 1 :b 2")
+  (is= (dbg/cmdstr->main->edn "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  :a 1 :b 2")
     {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
      :stdio-args   nil})
 
-  (let [result (cmdstr->main->edn "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  '{:a 1 :b 2}'")]
+  (let [result (dbg/cmdstr->main->edn "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  '{:a 1 :b 2}'")]
     ;(prn :result)
     ;(println result)
     (is= result
@@ -138,7 +139,7 @@
     (is= {:a 1 :b 2} ; map from 1st string
       (edn/read-string (xfirst (:cmdline-args result)))))
 
-  (let [result (cmdstr->main->edn
+  (let [result (dbg/cmdstr->main->edn
                  "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  <<EOF
                    {:a 1
                     :b 2 }
@@ -148,7 +149,7 @@
     )
 
   ; You *COULD* mix params from cmdline and stdio, but *PLEASE* just choose only one technique!!!
-  (let [result (cmdstr->main->edn
+  (let [result (dbg/cmdstr->main->edn
                  "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  '{:x 7 :y 9}' <<EOF
                    {:a 1
                     :b 2 }

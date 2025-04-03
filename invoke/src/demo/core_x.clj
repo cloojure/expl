@@ -1,18 +1,23 @@
 (ns demo.core-x
   (:use tupelo.core)
   (:require
-    [clojure.edn :as edn]
-    [clojure.java.io :as io]
     [schema.core :as s]
     [tupelo.schema :as tsk])
   (:gen-class))
 
-; NOTE:  Testing code will strip all output to STDIO containing fragment ":dbg--".
-;        All other output will be parsed into an EDN expression
-(defn -main
+(s/defn any-func
+  "Call like either:
+        clj -X demo.cor3-x/any-func     :a 1 :b 2           (implicit EDN map)
+        clj -X demo.cor3-x/any-func  '{ :a 1 :b 2 }'        (explicit EDN map)"
+  [opts :- tsk/KeyMap] ; Clojure converts args to EDN map automatically
+  (assert (map? opts)) ; verify
+  (prn opts))
+
+(s/defn -main
   "Call like either:
         clj -X demo.core/-main     :a 1 :b 2           (implicit EDN map)
         clj -X demo.core/-main  '{ :a 1 :b 2 }'        (explicit EDN map)"
-  [opts :- tsk/KeyMap]
+  [opts :- tsk/KeyMap] ; Clojure converts args to EDN map automatically
+  (assert (map? opts)) ; verify
   (prn opts))
 
