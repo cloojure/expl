@@ -1,4 +1,4 @@
-(ns demo.core-m
+(ns demo.main
   (:use tupelo.core)
   (:require
     [clojure.edn :as edn]

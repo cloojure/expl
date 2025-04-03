@@ -9,7 +9,14 @@
 
 ; NOTE:  Testing code will strip all output to STDIO containing fragment ":dbg--".
 ;        All other output will be parsed into an EDN expression
+
 (defn -main
+  "Call from JAR file like:
+        lein clean; lein uberjar
+        java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  <<EOF
+          {:a 1
+           :b 2 }
+        EOF "
   [& args]
   (spy :dbg--main--enter)
   (do

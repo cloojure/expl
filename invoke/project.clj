@@ -11,7 +11,6 @@
                  ]
 
   :jvm-opts ["-Xmx4g"]
-  :main demo.core
+  :main demo.core   ; ***** entrypoint for `java -jar  ./target/xxxxx-standalone.jar` *****
 
   )
-

@@ -1,4 +1,4 @@
-(ns demo.core-x
+(ns demo.exec
   (:use tupelo.core)
   (:require
     [schema.core :as s]

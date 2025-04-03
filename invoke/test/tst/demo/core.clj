@@ -5,10 +5,7 @@
   (:require
     [clojure.edn :as edn]
     [demo.debug :as dbg]
-    [schema.core :as s]
     [tupelo.misc :as misc]
-    [tupelo.schema :as tsk]
-    [tupelo.string :as str]
     ))
 
 (verify
