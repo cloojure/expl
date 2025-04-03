@@ -1,7 +1,5 @@
 (ns tst.demo.ujar
-  (:use demo.ujar
-        tupelo.core
-        tupelo.test)
+  (:use tupelo.core tupelo.test)
   (:require
     [demo.debug :as dbg]
     [tupelo.misc :as misc]
