@@ -16,30 +16,7 @@
   ; # explicit call to `-main` entrypoint
   (newline)
 
-  (is= {:a 1 :b 2} (dbg/cmdstr->main->edn "clj -X demo.core/main-x     :a 1 :b 2   ")) ; implicit EDN map
-  (is= {:a 1 :b 2} (dbg/cmdstr->main->edn "clj -X demo.core/main-x  '{ :a 1 :b 2 }'")) ; explicit EDN map
-
-  ; in `deps.edn`, we have define `run-x` => demo.core/main-x
-  (is= {:a 1 :b 2} (dbg/cmdstr->main->edn "clj -X:run-x      :a 1 :b 2   ")) ; implicit EDN map
-  (is= {:a 1 :b 2} (dbg/cmdstr->main->edn "clj -X:run-x   '{ :a 1 :b 2 }'")) ; explicit EDN map
-  )
-
-(verify
-  ;---------------------------------------------------------------------------------------------------
-  ; # explicit call to `-main` entrypoint
-  (newline)
-
-  (is= {:a 91 :b 2} (dbg/cmdstr->main->edn "clj -M -m demo.core/-main2  '{ :a 1 :b 2 }'")) ; explicit
-  ; EDN map
-  )
-
-
-(verify
-  ;---------------------------------------------------------------------------------------------------
-  ; # explicit call to `-main` entrypoint
-  (newline)
-
-  (is= (dbg/cmdstr->main->edn "clj -X demo.core/-main  :a 1 :b 2")
+  (is= (dbg/cmdstr->main->edn "clj -X demo.core/-main     :a 1 :b 2")
     {:cmdline-args [{:a 1 :b 2}] ; implicit EDN map, in a seq
      :stdio-args   nil})
 
@@ -47,29 +24,18 @@
     {:cmdline-args [{:a 1 :b 2}] ; explicit EDN map, in a seq
      :stdio-args   nil})
 
-  ; deps.edn alias =>  :run  {:exec-fn demo.core/-main}
-  (is= (dbg/cmdstr->main->edn "clj -X:run      :a 1 :b 2")
-    {:cmdline-args [{:a 1 :b 2}] ; implicit EDN map, in a seq
-     :stdio-args   nil})
-
-  ; deps.edn alias =>  :run  {:exec-fn demo.core/-main}
-  (is= (dbg/cmdstr->main->edn "clj -X:run   '{ :a 1 :b 2 }'")
-    {:cmdline-args [{:a 1 :b 2}] ; explicit EDN map, in a seq
-     :stdio-args   nil})
-
-
   ;---------------------------------------------------------------------------------------------------
   ; # uses default `-main` entrypoint
   (newline)
 
-  (let [result (dbg/cmdstr->main->edn "clj -M -m demo.core    :a 1 :b 2")]
+  (let [result (dbg/cmdstr->main->edn "clj -M -m demo.core      :a 1 :b 2")]
     (is= result
       {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
        :stdio-args   nil})
     (is= [:a 1 :b 2]
       (dbg/str-args->edn-vec (:cmdline-args result))))
 
-  (let [result (dbg/cmdstr->main->edn "clj -M -m demo.core    ':a 1 :b 2'")]
+  (let [result (dbg/cmdstr->main->edn "clj -M -m demo.core     ':a 1 :b 2'")]
     (is= result
       {:cmdline-args '(":a 1 :b 2") ; seq of 1 string
        :stdio-args   nil})
@@ -90,13 +56,13 @@
   ; # lein:  uses default `-main` entrypoint
   (newline)
 
-  (let [result (dbg/cmdstr->main->edn "lein run    :a 1 :b 2")]
+  (let [result (dbg/cmdstr->main->edn "lein run      :a 1 :b 2")]
     (is= result
       {:cmdline-args '(":a" "1" ":b" "2") ; seq of strings
        :stdio-args   nil})
     (is= [:a 1 :b 2] (dbg/str-args->edn-vec (:cmdline-args result))))
 
-  (let [result (dbg/cmdstr->main->edn "lein run    ':a 1 :b 2'")]
+  (let [result (dbg/cmdstr->main->edn "lein run     ':a 1 :b 2'")]
     (is= result
       {:cmdline-args '(":a 1 :b 2") ; seq of 1 string; NOT EDN collection
        :stdio-args   nil})

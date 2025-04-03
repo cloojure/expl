@@ -81,9 +81,3 @@
   (spy :dbg--main--leave)
   )
 
-(s/defn -main2
-  "Call like this (fully-qualified function name):
-        clj -M -m demo.core/main-m  '{ :a 1 :b 2 }'  " ; explicit EDN map
-  [arg-str :- s/Str]
-  (let [opts (edn/read-string arg-str)]
-    (prn opts)))

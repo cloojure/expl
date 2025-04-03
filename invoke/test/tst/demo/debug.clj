@@ -1,4 +1,4 @@
-(ns ^:test-refresh/focus tst.demo.debug
+(ns tst.demo.debug
   (:use demo.debug
         tupelo.core
         tupelo.test)
