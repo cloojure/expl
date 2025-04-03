@@ -1,5 +1,5 @@
-(ns tst.demo.core
-  (:use demo.core
+(ns tst.demo.debug
+  (:use demo.debug
         tupelo.core
         tupelo.test)
   (:require
@@ -9,6 +9,95 @@
     [tupelo.schema :as tsk]
     [tupelo.string :as str]
     ))
+
+; Make sure BASH, Java, Clojure, and Leiningen are installed
+; ***** see sdkman.io for best way to install/use/upgrade Java JDK *****
+(verify
+  (is (str/contains-str-frags? (:out (misc/shell-cmd "bash --version"))
+                    "GNU bash" "version"))
+
+  (it-> (:out (misc/shell-cmd "java --version"))
+    (is (or (str/contains-str-frags? it "OpenJDK Runtime Environment" "build") ; OpenJDK
+            (str/contains-str-frags? it "Java HotSpot" "build")))) ; Oracle
+  (is (str/contains-str-frags? (:out (misc/shell-cmd "clj --version"))
+        "Clojure" "CLI" "version" "1.12"))
+  (is (str/contains-str-frags? (:out (misc/shell-cmd "lein --version"))
+        "Leiningen 2." "on" "Java")))
+
+(verify
+  ; `read-string` will only read ONE string. Need a loop (aka mapv) to read multiple strings
+  (is= [:a 1 :b 2] (mapv edn/read-string [":a" "1" ":b" "2"]))
+
+  ; how to convert a sequence of key-value pairs into a map
+  (is= {:a 1 :b 2}
+    (hash-map :a 1 :b 2) ; 4 scalar args
+    (apply hash-map [:a 1 :b 2])) ; a single vector arg
+
+  ; cannot coerce data into a map via these expressions
+  (throws? (into {} :a 1 :b 2))
+  (throws? (into {} [:a 1 :b 2]))
+  (throws? (hash-map [:a 1 :b 2]))
+  (throws? (edn/read-string [":a" "1" ":b" "2"])))
+
+(s/defn debug-line? :- s/Bool
+  "Returns true iff a string contains a debug output line."
+  [s :- s/Str]
+  (str/contains-str? s ":dbg--"))
+
+(s/defn stdout->nondebug-lines :- [s/Str]
+  "Takes a multi-line string (e.g. from stdout), splits into separate lines, and removes all
+  debug output lines."
+  [outstr :- s/Str]
+  (let [out-lines    (str/split-lines outstr)
+        nondbg-lines (drop-if debug-line? out-lines)]
+    nondbg-lines))
+
+; verify ability to strip out all debut lines
+(verify
+  (isnt (debug-line? "dbg--a"))
+  (is (debug-line? ":dbg--b"))
+
+  (let [result (str/join
+                 (stdout->nondebug-lines
+                   ":dbg--aaa
+                     { :a 1 :b 2
+                     :dbg--bbb
+                     :c 3 }
+                    :dbg--zzz "))
+        parsed (edn/read-string result)]
+    (is= parsed {:a 1 :b 2 :c 3})))
+
+(s/defn str-args->edn-vec :- [s/Any]
+  "Converts a sequence of string args into a vector of EDN data"
+  [args :- [s/Str]]
+  (mapv edn/read-string args))
+
+(verify
+  (is= [:a 1 :b 2] (str-args->edn-vec [":a" "1" ":b" "2"]))
+  (is= [:a] (str-args->edn-vec [":a 1 :b 2"])) ; ***** only get 1st item if not EDN collection in string
+  (is= [:a 1 :b 2] (xfirst (str-args->edn-vec ["[:a 1 :b 2]"]))) ; string must be EDN collection to retain all values
+  (is= {:a 1 :b 2} (xfirst (str-args->edn-vec ["{:a 1 :b 2}"]))) ; string must be EDN collection to retain all values
+  )
+
+(s/defn cmdstr->main->edn :- s/Any
+  "Execute a BASH command-string that invokes `-main`, parse the stdout (after removing debug
+  lines), returning the result as EDN data."
+  [cmdstr :- s/Str]
+  (println "testing cmdstr:    " cmdstr)
+  (let
+    [out          (:out (misc/shell-cmd cmdstr))
+     ;>>           (prn :out)
+     ;>>           (println out)
+     keep-lines   (stdout->nondebug-lines out)
+     out-nondebug (str/join \space keep-lines)
+     ;>>           (prn :out-nondebug)
+     ;>>           (println out-nondebug)
+     out-edn      (edn/read-string out-nondebug)]
+    ;(nl)
+    ;(prn :out)
+    ;(println out)
+    ;(nl)
+    out-edn))
 
 (verify
   ;---------------------------------------------------------------------------------------------------
