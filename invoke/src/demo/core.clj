@@ -96,25 +96,19 @@
     (prn :dbg--args-other))
 
   (println "{")     ; beginning of EDN output map
-  (prn :cmdline-args) ; key of mapentry #1
-  (prn args)        ; val of mapentry #1
+  (prn :cmdline-args args)        ; mapentry #1
   (nl)
-
   (let [stdio-str (slurp (io/reader System/in))
         opts      (edn/read-string stdio-str)]
     (prn :dbg--in-str stdio-str)
     (prn :dbg--in-data opts)
     (nl)
-    (prn :stdio-args) ; key of mapentry #2
-    (prn opts) ; val of mapentry #2
+    (prn :stdio-args opts) ; mapentry #2
     (let [invoke-fn (:invoke-fn opts)]
       (when-not (nil? invoke-fn)
-        (prn :invoke-result) ; key of mapentry #3
-        (prn (dispatch opts)) ; val of mapentry #3
-        ))
+        (prn :invoke-result (dispatch opts)))) ; mapentry #3
     )
   (println "}")     ; end of EDN output map
 
   (spy :dbg--main--leave)
   )
-
