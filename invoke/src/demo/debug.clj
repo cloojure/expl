@@ -38,8 +38,8 @@
      ;>>           (println out)
      keep-lines   (stdout->nondebug-lines out)
      out-nondebug (str/join \space keep-lines)
-     ;>>           (prn :out-nondebug)
-     ;>>           (println out-nondebug)
+     >>           (prn :out-nondebug)
+     >>           (println out-nondebug)
      out-edn      (edn/read-string out-nondebug)]
     ;(nl)
     ;(prn :out)

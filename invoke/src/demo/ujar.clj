@@ -2,10 +2,13 @@
   (:use tupelo.core)
   (:require
     [schema.core :as s]
-    [tupelo.schema :as tsk]))
+    [tupelo.schema :as tsk])
+  (:gen-class))
 
-(s/defn some-fn
-  [ctx :- tsk/KeyMap]
+(defn target
+  [ctx]
   (assert (map? ctx))
-  :some-fn--result
-  )
+
+  ; constant return value
+  :target--result)
+
