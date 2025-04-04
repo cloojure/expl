@@ -3,10 +3,10 @@
   (:require
     [schema.core :as s]
     [tupelo.schema :as tsk])
-  (:gen-class))
+  )
 
-(defn target
-  [ctx]
+(s/defn target :- s/Any
+  [ctx :- tsk/KeyMap]
   (assert (map? ctx))
 
   ; constant return value
