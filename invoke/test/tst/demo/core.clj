@@ -104,9 +104,9 @@
 
   (let [result (dbg/cmdstr->main->edn
                  "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  <<EOF
-                   {:a 1
-                    :b 2 }
-                   EOF")]
+                     {:a 1
+                      :b 2 }
+                     EOF")]
     (is= result {:cmdline-args nil
                  :stdio-args   {:a 1 :b 2}}) ; parsed multi-line string from stdio
     )
@@ -114,9 +114,9 @@
   ; You *COULD* mix params from cmdline and stdio, but *PLEASE* just choose only one technique!!!
   (let [result (dbg/cmdstr->main->edn
                  "java -jar ./target/demo-1.0.0-SNAPSHOT-standalone.jar  '{:x 7 :y 9}' <<EOF
-                   {:a 1
-                    :b 2 }
-                   EOF")]
+                     {:a 1
+                      :b 2 }
+                     EOF")]
     ;(prn :result)
     ;(println result)
     (is= result {:cmdline-args ["{:x 7 :y 9}"] ; a seq of 1 string, ready to be parsed

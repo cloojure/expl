@@ -7,7 +7,7 @@
     [schema.core :as s]
     [tupelo.schema :as tsk]
 
-    [demo.ujar]
+    [demo.ujar]     ; required for JAR file even with fully-qualified function name
     )
   (:gen-class))
 
